@@ -7,13 +7,28 @@ import {
   Search,
   Menu
 } from "lucide-react";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import jamJournalLogo from "@/assets/jam-journal-logo.png";
 import { handleSubmitMusicRedirect } from "@/lib/utils";
 
 const PublicNavigation = () => {
   const location = useLocation();
   const [isMenuOpen, setIsMenuOpen] = useState(false);
+  const [homepageContent, setHomepageContent] = useState({ homepage_logo_url: '', homepage_title: '' });
+
+  useEffect(() => {
+    let isMounted = true;
+    async function fetchHomepageContent() {
+      try {
+        const res = await fetch('/api/auth/settings/homepage-content');
+        if (!res.ok) return;
+        const data = await res.json();
+        if (isMounted) setHomepageContent(data);
+      } catch {}
+    }
+    fetchHomepageContent();
+    return () => { isMounted = false; };
+  }, []);
 
   const isActive = (path: string) => location.pathname === path;
 
@@ -30,11 +45,11 @@ const PublicNavigation = () => {
           {/* Logo */}
           <Link to="/" className="flex items-center space-x-3">
             <img 
-              src={jamJournalLogo} 
-              alt="JAM JOURNAL SOUND" 
+              src={homepageContent.homepage_logo_url || jamJournalLogo} 
+              alt={homepageContent.homepage_title } 
               className="h-8 w-auto"
             />
-            <span className="font-playfair font-bold text-xl">JAM JOURNAL SOUND</span>
+            <span className="font-playfair font-bold text-xl">{homepageContent.homepage_title }</span>
           </Link>
 
           {/* Desktop Navigation */}

@@ -51,7 +51,7 @@ const AdminLogin = () => {
         title: "Login Successful",
         description: "Welcome back to JAM JOURNAL SOUND Admin Panel",
       });
-      navigate("/admin/dashboard");
+      navigate("/admin/analytics");
     } catch (error) {
       const newAttempts = loginAttempts + 1;
       setLoginAttempts(newAttempts);

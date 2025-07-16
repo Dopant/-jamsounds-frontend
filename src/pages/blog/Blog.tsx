@@ -21,6 +21,8 @@ import {
   User
 } from "lucide-react";
 import { getApiUrl } from "@/lib/utils";
+import { handleSubmitMusicRedirect } from '@/lib/utils';
+import { FaXTwitter, FaFacebook, FaInstagram, FaYoutube } from 'react-icons/fa6';
 
 const genres = ["All Genres", "Electronic", "Hip-Hop", "Indie Rock", "Folk", "Pop", "Rock", "Jazz", "R&B", "Alternative", "Editorial"];
 
@@ -46,6 +48,7 @@ const Blog = () => {
   const [loadingRecent, setLoadingRecent] = useState(true);
   const [errorPopular, setErrorPopular] = useState(null);
   const [errorRecent, setErrorRecent] = useState(null);
+  const [socialLinks, setSocialLinks] = useState<any>({});
 
   useEffect(() => {
     console.log('Blog.tsx useEffect running');
@@ -109,6 +112,31 @@ const Blog = () => {
       });
   }, []);
 
+  useEffect(() => {
+    async function fetchSocialLinks() {
+      try {
+        const res = await fetch('/api/auth/settings/social-links');
+        if (!res.ok) return;
+        const data = await res.json();
+        setSocialLinks(data);
+      } catch {}
+    }
+    fetchSocialLinks();
+  }, []);
+
+  useEffect(() => {
+    // Inject Tawk.to chat bot script
+    const script = document.createElement('script');
+    script.async = true;
+    script.src = 'https://embed.tawk.to/6877fa9390f2ce1914205220/1j0aalled';
+    script.charset = 'UTF-8';
+    script.setAttribute('crossorigin', '*');
+    document.body.appendChild(script);
+    return () => {
+      document.body.removeChild(script);
+    };
+  }, []);
+
   // Filter and sort posts (filterBy handled client-side for now)
   let filteredPosts = posts
     .filter(post => {
@@ -149,17 +177,6 @@ const Blog = () => {
     if (!views) return '0 views';
     if (views >= 10000) return `${(views / 1000).toFixed(1)}K views`;
     return `${views} views`;
-  };
-
-  const handleSubmitMusicRedirect = async () => {
-    try {
-      const res = await fetch(getApiUrl('/api/auth/settings/submit-redirect-url'));
-      const data = await res.json();
-      const url = data.url || 'https://example.com';
-      window.location.href = url;
-    } catch {
-      window.location.href = 'https://example.com';
-    }
   };
 
   const handleRatePost = async (postId) => {
@@ -541,6 +558,67 @@ const Blog = () => {
           </div>
         </div>
       </div>
+
+      {/* Footer */}
+      <footer className="bg-gradient-footer border-t border-border/50 py-16">
+        <div className="container mx-auto px-4">
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-12">
+            <div>
+              <h3 className="font-semibold mb-4">About Us</h3>
+              <p className="text-muted-foreground text-sm">
+                We are passionate about music and dedicated to bringing you the best in music reviews, news, and trends.
+              </p>
+            </div>
+            <div>
+              <h3 className="font-semibold mb-4">Quick Links</h3>
+              <ul className="space-y-3 text-muted-foreground text-sm">
+                <li><Link to="/" className="hover:text-primary transition-colors">Home</Link></li>
+                <li><Link to="/blog" className="hover:text-primary transition-colors">Blog</Link></li>
+                <li><Link to="/submit-music" className="hover:text-primary transition-colors">Submit Music</Link></li>
+                <li><Link to="/contact" className="hover:text-primary transition-colors">Contact</Link></li>
+              </ul>
+            </div>
+            <div>
+              <h3 className="font-semibold mb-4">Categories</h3>
+              <ul className="space-y-3 text-muted-foreground text-sm">
+                {genres.slice(1).map((genre) => (
+                  <li key={genre}>
+                    <Link to={`/blog?genre=${genre}`} className="hover:text-primary transition-colors">{genre}</Link>
+                  </li>
+                ))}
+              </ul>
+            </div>
+            <div>
+              <h3 className="font-semibold mb-4">Follow Us</h3>
+              <div className="flex space-x-4 mb-4">
+                {socialLinks.social_x_url && (
+                  <a href={socialLinks.social_x_url} target="_blank" rel="noopener noreferrer" aria-label="X">
+                    <FaXTwitter className="w-6 h-6 hover:text-primary transition-colors" />
+                  </a>
+                )}
+                {socialLinks.social_facebook_url && (
+                  <a href={socialLinks.social_facebook_url} target="_blank" rel="noopener noreferrer" aria-label="Facebook">
+                    <FaFacebook className="w-6 h-6 hover:text-primary transition-colors" />
+                  </a>
+                )}
+                {socialLinks.social_instagram_url && (
+                  <a href={socialLinks.social_instagram_url} target="_blank" rel="noopener noreferrer" aria-label="Instagram">
+                    <FaInstagram className="w-6 h-6 hover:text-primary transition-colors" />
+                  </a>
+                )}
+                {socialLinks.social_youtube_url && (
+                  <a href={socialLinks.social_youtube_url} target="_blank" rel="noopener noreferrer" aria-label="YouTube">
+                    <FaYoutube className="w-6 h-6 hover:text-primary transition-colors" />
+                  </a>
+                )}
+              </div>
+              <p className="text-sm text-muted-foreground">
+                &copy; {new Date().getFullYear()} Music Blog. All rights reserved.
+              </p>
+            </div>
+          </div>
+        </div>
+      </footer>
     </div>
   );
 };

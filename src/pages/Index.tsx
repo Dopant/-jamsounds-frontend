@@ -18,7 +18,9 @@ import {
   Search
 } from "lucide-react";
 import heroImage from "@/assets/hero-image.jpg";
-import { getApiUrl } from "@/lib/utils";
+import { getApiUrl, handleSubmitMusicRedirect } from "@/lib/utils";
+import Unsubscribe from './Unsubscribe';
+import { FaXTwitter, FaFacebook, FaInstagram, FaYoutube } from 'react-icons/fa6';
 
 const genres = [
   "All Genres", "Electronic", "Hip-Hop", "Indie Rock", "Folk", "Pop", "Rock", "Jazz", "R&B", "Alternative"
@@ -38,6 +40,22 @@ const Index = () => {
   const [errorFeatured, setErrorFeatured] = useState(null);
   const [errorLatest, setErrorLatest] = useState(null);
   const [errorPopular, setErrorPopular] = useState(null);
+  const [homepageStats, setHomepageStats] = useState({
+    artists_featured_count: '',
+    reviews_published_count: '',
+    monthly_readers_count: ''
+  });
+  const [statsLoading, setStatsLoading] = useState(true);
+  const [homepageContent, setHomepageContent] = useState({
+    homepage_title: '',
+    homepage_subtitle: '',
+    homepage_description: '',
+    homepage_logo_url: ''
+  });
+  const [homepageContentLoading, setHomepageContentLoading] = useState(true);
+  const [newsletterStatus, setNewsletterStatus] = useState('');
+  const [newsletterLoading, setNewsletterLoading] = useState(false);
+  const [socialLinks, setSocialLinks] = useState<any>({});
 
   useEffect(() => {
     console.log('Index.tsx loaded');
@@ -114,6 +132,59 @@ const Index = () => {
       });
   }, []);
 
+  useEffect(() => {
+    async function fetchHomepageStats() {
+      try {
+        const res = await fetch('/api/auth/homepage-stats');
+        if (!res.ok) return;
+        const data = await res.json();
+        setHomepageStats(data);
+      } finally {
+        setStatsLoading(false);
+      }
+    }
+    fetchHomepageStats();
+  }, []);
+
+  useEffect(() => {
+    async function fetchHomepageContent() {
+      try {
+        const res = await fetch('/api/auth/settings/homepage-content');
+        if (!res.ok) return;
+        const data = await res.json();
+        setHomepageContent(data);
+      } finally {
+        setHomepageContentLoading(false);
+      }
+    }
+    fetchHomepageContent();
+  }, []);
+
+  useEffect(() => {
+    async function fetchSocialLinks() {
+      try {
+        const res = await fetch('/api/auth/settings/social-links');
+        if (!res.ok) return;
+        const data = await res.json();
+        setSocialLinks(data);
+      } catch {}
+    }
+    fetchSocialLinks();
+  }, []);
+
+  useEffect(() => {
+    // Inject Tawk.to chat bot script
+    const script = document.createElement('script');
+    script.async = true;
+    script.src = 'https://embed.tawk.to/6877fa9390f2ce1914205220/1j0aalled';
+    script.charset = 'UTF-8';
+    script.setAttribute('crossorigin', '*');
+    document.body.appendChild(script);
+    return () => {
+      document.body.removeChild(script);
+    };
+  }, []);
+
   // Add view formatting helper
   const formatViews = (views) => {
     if (!views) return '0 views';
@@ -125,17 +196,6 @@ const Index = () => {
   const filteredLatestPosts = selectedGenre === "All Genres"
     ? latestPosts
     : latestPosts.filter(post => post.genre === selectedGenre);
-
-  const handleSubmitMusicRedirect = async () => {
-    try {
-      const res = await fetch(getApiUrl('/api/auth/settings/submit-redirect-url'));
-      const data = await res.json();
-      const url = data.url || 'https://example.com';
-      window.location.href = url;
-    } catch {
-      window.location.href = 'https://example.com';
-    }
-  };
 
   return (
     <div className="min-h-screen bg-background">
@@ -155,14 +215,14 @@ const Index = () => {
         <div className="relative container mx-auto px-4 py-24 lg:py-32">
           <div className="max-w-3xl animate-fade-in">
             <h1 className="text-5xl lg:text-7xl font-playfair font-bold text-white mb-6 leading-tight">
-              Where Music 
-              <span className="bg-gradient-to-r from-secondary to-accent bg-clip-text text-transparent">
-                {" "}Stories{" "}
-              </span>
-              Come Alive
+             
+              <span className="bg-gradient-to-r from-secondary to-accent bg-clip-text text-transparent">  </span>
             </h1>
+            <h2 className="text-2xl lg:text-3xl font-playfair font-semibold text-white mb-4 leading-tight">
+              {homepageContent.homepage_subtitle || 'Where Music Stories Come Alive'}
+            </h2>
             <p className="text-xl lg:text-2xl text-white/90 mb-8 leading-relaxed">
-              Discover emerging artists, read exclusive reviews, and explore the sounds shaping tomorrow's music scene.
+              {homepageContent.homepage_description || "Discover emerging artists, read exclusive reviews, and explore the sounds shaping tomorrow's music scene."}
             </p>
             <div className="flex flex-col sm:flex-row gap-4 animate-slide-up stagger-1">
               <Button className="btn-hero text-lg px-8 py-3" onClick={handleSubmitMusicRedirect}>
@@ -186,19 +246,19 @@ const Index = () => {
           <div className="grid grid-cols-2 md:grid-cols-4 gap-8">
             <div className="text-center animate-scale-in stagger-1">
               <div className="text-3xl lg:text-4xl font-bold text-primary mb-2">
-                {localStorage.getItem('artistsFeaturedCount') || '2.5K+'}
+                {statsLoading ? '...' : homepageStats.artists_featured_count || '2.5K+'}
               </div>
               <p className="text-muted-foreground">Artists Featured</p>
             </div>
             <div className="text-center animate-scale-in stagger-2">
               <div className="text-3xl lg:text-4xl font-bold text-secondary mb-2">
-                {localStorage.getItem('reviewsPublishedCount') || '15K+'}
+                {statsLoading ? '...' : homepageStats.reviews_published_count || '15K+'}
               </div>
               <p className="text-muted-foreground">Reviews Published</p>
             </div>
             <div className="text-center animate-scale-in stagger-3">
               <div className="text-3xl lg:text-4xl font-bold text-accent mb-2">
-                {localStorage.getItem('monthlyReadersCount') || '1M+'}
+                {statsLoading ? '...' : homepageStats.monthly_readers_count || '1M+'}
               </div>
               <p className="text-muted-foreground">Monthly Readers</p>
             </div>
@@ -432,17 +492,44 @@ const Index = () => {
                   <p className="text-primary-foreground/80 text-sm mb-4">
                     Get the latest music reviews and artist spotlights delivered to your inbox.
                   </p>
-                  <div className="space-y-3">
-                    <Input 
+                  <form
+                    onSubmit={async (e) => {
+                      e.preventDefault();
+                      setNewsletterStatus('');
+                      setNewsletterLoading(true);
+                      try {
+                        const res = await fetch('/api/newsletter/subscribe', {
+                          method: 'POST',
+                          headers: { 'Content-Type': 'application/json' },
+                          body: JSON.stringify({ email })
+                        });
+                        const data = await res.json();
+                        if (!res.ok) throw new Error(data.message || 'Failed to subscribe');
+                        setNewsletterStatus('Subscribed! Check your inbox.');
+                        setEmail('');
+                      } catch (err) {
+                        setNewsletterStatus(err instanceof Error ? err.message : 'Failed to subscribe');
+                      } finally {
+                        setNewsletterLoading(false);
+                      }
+                    }}
+                    className="space-y-3"
+                  >
+                    <Input
                       placeholder="Enter your email"
                       value={email}
                       onChange={(e) => setEmail(e.target.value)}
                       className="bg-white/20 border-white/30 placeholder:text-primary-foreground/60 text-primary-foreground"
+                      type="email"
+                      required
                     />
-                    <Button className="w-full bg-white text-primary hover:bg-white/90">
-                      Subscribe
+                    <Button className="w-full bg-white text-primary hover:bg-white/90" type="submit" disabled={newsletterLoading}>
+                      {newsletterLoading ? 'Subscribing...' : 'Subscribe'}
                     </Button>
-                  </div>
+                    {newsletterStatus && (
+                      <div className={`text-sm mt-2 ${newsletterStatus.startsWith('Subscribed') ? 'text-green-200' : 'text-red-200'}`}>{newsletterStatus}</div>
+                    )}
+                  </form>
                 </Card>
 
                 {/* Quick Actions */}
@@ -492,13 +579,17 @@ const Index = () => {
           <div className="grid grid-cols-1 md:grid-cols-4 gap-8">
             <div className="col-span-1 md:col-span-2">
               <div className="flex items-center space-x-2 mb-4">
-                <div className="w-8 h-8 bg-gradient-primary rounded-lg flex items-center justify-center">
-                  <Music className="w-5 h-5 text-primary-foreground" />
-                </div>
-                <span className="font-playfair font-bold text-xl">JAM JOURNAL SOUND</span>
+                {homepageContent.homepage_logo_url ? (
+                  <img src={homepageContent.homepage_logo_url} alt="Logo" className="w-8 h-8 rounded-lg object-cover" />
+                ) : (
+                  <div className="w-8 h-8 bg-gradient-primary rounded-lg flex items-center justify-center">
+                    <Music className="w-5 h-5 text-primary-foreground" />
+                  </div>
+                )}
+                {/* Remove homepage title from footer to avoid duplicate rendering */}
               </div>
               <p className="text-background/70 mb-4 max-w-md">
-                The premier music blog platform where stories come alive through in-depth reviews, artist spotlights, and exclusive content.
+                {homepageContent.homepage_description || 'The premier music blog platform where stories come alive through in-depth reviews, artist spotlights, and exclusive content.'}
               </p>
               <div className="flex space-x-4">
                 <Button size="sm" variant="ghost" className="text-background/70 hover:text-background">
@@ -517,7 +608,7 @@ const Index = () => {
               <h4 className="font-semibold mb-4">Content</h4>
               <div className="space-y-2 text-background/70">
                 <Link to="/blog" className="block hover:text-background transition-colors">All Articles</Link>
-                <Link to="/blog/submit" className="block hover:text-background transition-colors">Submit Music</Link>
+                <Link to="#" className="block hover:text-background transition-colors" onClick={e => { e.preventDefault(); handleSubmitMusicRedirect(); }}>Submit Music</Link>
                 <Link to="/blog/join-curator" className="block hover:text-background transition-colors">Join Team</Link>
               </div>
             </div>
@@ -533,6 +624,28 @@ const Index = () => {
           </div>
           
           <div className="border-t border-background/20 mt-12 pt-8 text-center text-background/60">
+            <div className="flex space-x-4 mb-4">
+              {socialLinks.social_x_url && (
+                <a href={socialLinks.social_x_url} target="_blank" rel="noopener noreferrer" aria-label="X">
+                  <FaXTwitter className="w-6 h-6 hover:text-primary transition-colors" />
+                </a>
+              )}
+              {socialLinks.social_facebook_url && (
+                <a href={socialLinks.social_facebook_url} target="_blank" rel="noopener noreferrer" aria-label="Facebook">
+                  <FaFacebook className="w-6 h-6 hover:text-primary transition-colors" />
+                </a>
+              )}
+              {socialLinks.social_instagram_url && (
+                <a href={socialLinks.social_instagram_url} target="_blank" rel="noopener noreferrer" aria-label="Instagram">
+                  <FaInstagram className="w-6 h-6 hover:text-primary transition-colors" />
+                </a>
+              )}
+              {socialLinks.social_youtube_url && (
+                <a href={socialLinks.social_youtube_url} target="_blank" rel="noopener noreferrer" aria-label="YouTube">
+                  <FaYoutube className="w-6 h-6 hover:text-primary transition-colors" />
+                </a>
+              )}
+            </div>
             <p>&copy; 2024 JAM JOURNAL SOUND. All rights reserved.</p>
           </div>
         </div>

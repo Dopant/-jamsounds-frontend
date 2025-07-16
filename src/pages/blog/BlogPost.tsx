@@ -29,6 +29,7 @@ import {
   Music,
   TrendingUp
 } from "lucide-react";
+import { FaXTwitter, FaFacebook, FaInstagram, FaYoutube } from 'react-icons/fa6';
 
 const BlogPost = () => {
   const { id } = useParams();
@@ -40,6 +41,7 @@ const BlogPost = () => {
   const [liked, setLiked] = useState(false);
   const [commentsVisible, setCommentsVisible] = useState(false);
   const [ratingLoading, setRatingLoading] = useState(false);
+  const [socialLinks, setSocialLinks] = useState<any>({});
 
   useEffect(() => {
     setLoading(true);
@@ -60,6 +62,18 @@ const BlogPost = () => {
         setLoading(false);
       });
   }, [id]);
+
+  useEffect(() => {
+    async function fetchSocialLinks() {
+      try {
+        const res = await fetch('/api/auth/settings/social-links');
+        if (!res.ok) return;
+        const data = await res.json();
+        setSocialLinks(data);
+      } catch {}
+    }
+    fetchSocialLinks();
+  }, []);
 
   if (loading) {
     return (
@@ -297,23 +311,8 @@ const BlogPost = () => {
               {/* Engagement Actions */}
               <div className="flex items-center justify-between mt-8 pt-6 border-t border-border">
                 <div className="flex items-center space-x-4">
-                  <Button 
-                    variant="outline" 
-                    size="sm"
-                    onClick={() => setLiked(!liked)}
-                    className={liked ? "text-red-500 border-red-500" : ""}
-                  >
-                    <Heart className={`w-4 h-4 mr-2 ${liked ? 'fill-current' : ''}`} />
-                    {(post.likes || 0) + (liked ? 1 : 0)}
-                  </Button>
-                  <Button 
-                    variant="outline" 
-                    size="sm"
-                    onClick={() => setCommentsVisible(!commentsVisible)}
-                  >
-                    <MessageCircle className="w-4 h-4 mr-2" />
-                    {(post.comments?.length || 0)} Comments
-                  </Button>
+                  
+                 
                 </div>
                 
                 <SocialShare

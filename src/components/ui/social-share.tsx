@@ -1,16 +1,16 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { 
   Share2, 
   Twitter, 
   Facebook, 
-  Linkedin, 
   Instagram, 
   Copy,
   Check
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import { FaXTwitter, FaFacebook, FaInstagram, FaYoutube } from 'react-icons/fa6';
 
 interface SocialShareProps {
   url: string;
@@ -22,92 +22,84 @@ interface SocialShareProps {
 export function SocialShare({ url, title, excerpt, className }: SocialShareProps) {
   const [copied, setCopied] = useState(false);
   const { toast } = useToast();
+  const [socialLinks, setSocialLinks] = useState<any>({});
+
+  useEffect(() => {
+    async function fetchSocialLinks() {
+      try {
+        const res = await fetch('/api/auth/settings/social-links');
+        if (!res.ok) return;
+        const data = await res.json();
+        setSocialLinks(data);
+      } catch {}
+    }
+    fetchSocialLinks();
+  }, []);
 
   const shareUrls = {
     twitter: `https://twitter.com/intent/tweet?text=${encodeURIComponent(title)}&url=${encodeURIComponent(url)}`,
     facebook: `https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(url)}`,
-    linkedin: `https://www.linkedin.com/sharing/share-offsite/?url=${encodeURIComponent(url)}`,
-    instagram: `https://www.instagram.com/`, // Instagram doesn't support direct URL sharing
   };
 
   const handleShare = (platform: keyof typeof shareUrls) => {
-    if (platform === "instagram") {
-      toast({
-        title: "Instagram sharing",
-        description: "Please share manually on Instagram by copying the link.",
-      });
-      return;
-    }
-
     window.open(shareUrls[platform], "_blank", "width=600,height=400");
-  };
-
-  const copyToClipboard = async () => {
-    try {
-      await navigator.clipboard.writeText(url);
-      setCopied(true);
-      toast({
-        title: "Link copied!",
-        description: "The article link has been copied to your clipboard.",
-      });
-      setTimeout(() => setCopied(false), 2000);
-    } catch (error) {
-      toast({
-        title: "Failed to copy",
-        description: "Could not copy the link. Please try again.",
-        variant: "destructive",
-      });
-    }
   };
 
   return (
     <div className={`flex items-center space-x-2 ${className}`}>
       <span className="text-sm text-muted-foreground">Share:</span>
-      
-      <Button
-        size="sm"
-        variant="outline"
-        onClick={() => handleShare("twitter")}
-        className="hover:bg-blue-50 hover:border-blue-300 hover:text-blue-600"
-      >
-        <Twitter className="w-4 h-4" />
-      </Button>
-      
-      <Button
-        size="sm"
-        variant="outline"
-        onClick={() => handleShare("facebook")}
-        className="hover:bg-blue-50 hover:border-blue-300 hover:text-blue-600"
-      >
-        <Facebook className="w-4 h-4" />
-      </Button>
-      
-      <Button
-        size="sm"
-        variant="outline"
-        onClick={() => handleShare("linkedin")}
-        className="hover:bg-blue-50 hover:border-blue-300 hover:text-blue-600"
-      >
-        <Linkedin className="w-4 h-4" />
-      </Button>
-      
-      <Button
-        size="sm"
-        variant="outline"
-        onClick={() => handleShare("instagram")}
-        className="hover:bg-pink-50 hover:border-pink-300 hover:text-pink-600"
-      >
-        <Instagram className="w-4 h-4" />
-      </Button>
-      
-      <Button
-        size="sm"
-        variant="outline"
-        onClick={copyToClipboard}
-        className="hover:bg-green-50 hover:border-green-300 hover:text-green-600"
-      >
-        {copied ? <Check className="w-4 h-4" /> : <Copy className="w-4 h-4" />}
-      </Button>
+      {socialLinks.social_x_url && (
+        <Button
+          size="sm"
+          variant="outline"
+          onClick={() => handleShare("twitter")}
+          className="hover:bg-blue-50 hover:border-blue-300 hover:text-blue-600"
+        >
+          <FaXTwitter className="w-4 h-4" />
+        </Button>
+      )}
+      {socialLinks.social_facebook_url && (
+        <Button
+          size="sm"
+          variant="outline"
+          onClick={() => handleShare("facebook")}
+          className="hover:bg-blue-50 hover:border-blue-300 hover:text-blue-600"
+        >
+          <FaFacebook className="w-4 h-4" />
+        </Button>
+      )}
+      {socialLinks.social_instagram_url && (
+        <a
+          href={socialLinks.social_instagram_url}
+          target="_blank"
+          rel="noopener noreferrer"
+          aria-label="Instagram"
+        >
+          <Button
+            size="sm"
+            variant="outline"
+            className="hover:bg-pink-50 hover:border-pink-300 hover:text-pink-600"
+          >
+            <FaInstagram className="w-4 h-4" />
+          </Button>
+        </a>
+      )}
+      {socialLinks.social_youtube_url && (
+        <a
+          href={socialLinks.social_youtube_url}
+          target="_blank"
+          rel="noopener noreferrer"
+          aria-label="YouTube"
+        >
+          <Button
+            size="sm"
+            variant="outline"
+            className="hover:bg-red-50 hover:border-red-300 hover:text-red-600"
+          >
+            <FaYoutube className="w-4 h-4" />
+          </Button>
+        </a>
+      )}
     </div>
   );
 }

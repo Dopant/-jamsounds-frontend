@@ -21,7 +21,6 @@ const AdminLayout = ({ children }: { children: React.ReactNode }) => {
   const navigate = useNavigate();
 
   const navigationItems = [
-    { name: "Dashboard", href: "/admin/dashboard", icon: LayoutDashboard },
     { name: "Content", href: "/admin/content", icon: Music },
     { name: "Analytics", href: "/admin/analytics", icon: BarChart3 },
     { name: "Settings", href: "/admin/settings", icon: Settings },
