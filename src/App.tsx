@@ -24,6 +24,11 @@ import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
 
+console.log('App.tsx loaded');
+if (typeof process !== 'undefined' && process.stdout) {
+  process.stdout.write('App.tsx loaded (server)\n');
+}
+
 const App = () => (
   <QueryClientProvider client={queryClient}>
     <ThemeProvider attribute="class" defaultTheme="system" enableSystem>

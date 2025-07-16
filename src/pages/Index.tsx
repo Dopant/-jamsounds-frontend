@@ -18,6 +18,7 @@ import {
   Search
 } from "lucide-react";
 import heroImage from "@/assets/hero-image.jpg";
+import { getApiUrl } from "@/lib/utils";
 
 const genres = [
   "All Genres", "Electronic", "Hip-Hop", "Indie Rock", "Folk", "Pop", "Rock", "Jazz", "R&B", "Alternative"
@@ -39,26 +40,19 @@ const Index = () => {
   const [errorPopular, setErrorPopular] = useState(null);
 
   useEffect(() => {
-    setLoadingFeatured(true);
-    fetch('/api/posts?category=featured&limit=4')
-      .then(res => {
-        if (!res.ok) throw new Error('Network response was not ok');
-        return res.json();
-      })
-      .then(data => {
-        setFeaturedPosts(data);
-        setErrorFeatured(null);
-        setLoadingFeatured(false);
-      })
-      .catch(() => {
-        setErrorFeatured('Failed to load featured posts');
-        setLoadingFeatured(false);
-      });
+    console.log('Index.tsx loaded');
+    if (typeof process !== 'undefined' && process.stdout) {
+      process.stdout.write('Index.tsx loaded (server)\n');
+    }
   }, []);
 
   useEffect(() => {
+    console.log('Index.tsx useEffect running');
+    if (typeof process !== 'undefined' && process.stdout) {
+      process.stdout.write('Index.tsx useEffect running (server)\n');
+    }
     setLoadingLatest(true);
-    fetch('/api/posts?category=latest&limit=6')
+    fetch(getApiUrl('/api/posts?category=latest&limit=6'))
       .then(res => {
         if (!res.ok) throw new Error('Network response was not ok');
         return res.json();
@@ -75,8 +69,36 @@ const Index = () => {
   }, []);
 
   useEffect(() => {
+    // Log when the featured posts fetch starts
+    if (typeof process !== 'undefined' && process.stdout) {
+      process.stdout.write('Fetching featured posts...\n');
+    }
+    setLoadingFeatured(true);
+    fetch(getApiUrl('/api/posts?category=featured&limit=4'))
+      .then(res => {
+        if (!res.ok) throw new Error('Network response was not ok');
+        return res.json();
+      })
+      .then(data => {
+        if (typeof process !== 'undefined' && process.stdout) {
+          process.stdout.write('Featured posts data: ' + JSON.stringify(data) + '\n');
+        }
+        setFeaturedPosts(data);
+        setErrorFeatured(null);
+        setLoadingFeatured(false);
+      })
+      .catch((err) => {
+        if (typeof process !== 'undefined' && process.stdout) {
+          process.stdout.write('Failed to load featured posts: ' + err + '\n');
+        }
+        setErrorFeatured('Failed to load featured posts');
+        setLoadingFeatured(false);
+      });
+  }, []);
+
+  useEffect(() => {
     setLoadingPopular(true);
-    fetch('/api/posts?category=popular&limit=3')
+    fetch(getApiUrl('/api/posts?category=popular&limit=3'))
       .then(res => {
         if (!res.ok) throw new Error('Network response was not ok');
         return res.json();
@@ -106,7 +128,7 @@ const Index = () => {
 
   const handleSubmitMusicRedirect = async () => {
     try {
-      const res = await fetch('/api/auth/settings/submit-redirect-url');
+      const res = await fetch(getApiUrl('/api/auth/settings/submit-redirect-url'));
       const data = await res.json();
       const url = data.url || 'https://example.com';
       window.location.href = url;

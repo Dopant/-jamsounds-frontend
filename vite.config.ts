@@ -13,6 +13,9 @@ export default defineConfig(({ mode }) => ({
       '/uploads': 'http://localhost:4000', // Proxy image uploads to backend
     },
   },
+  define: {
+    'import.meta.env.VITE_API_BASE_URL': process.env.VITE_API_BASE_URL || '',
+  },
   plugins: [
     react(),
     mode === 'development' &&
@@ -24,3 +27,5 @@ export default defineConfig(({ mode }) => ({
     },
   },
 }));
+// In production, set VITE_API_BASE_URL in your .env file to your Vercel backend URL (e.g. https://your-backend.vercel.app)
+// Update fetch calls in the frontend to use this base URL.

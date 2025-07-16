@@ -20,10 +20,15 @@ import {
   Clock,
   User
 } from "lucide-react";
+import { getApiUrl } from "@/lib/utils";
 
 const genres = ["All Genres", "Electronic", "Hip-Hop", "Indie Rock", "Folk", "Pop", "Rock", "Jazz", "R&B", "Alternative", "Editorial"];
 
 const Blog = () => {
+  console.log('Blog.tsx loaded');
+  if (typeof process !== 'undefined' && process.stdout) {
+    process.stdout.write('Blog.tsx loaded (server)\n');
+  }
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedGenre, setSelectedGenre] = useState("All Genres");
   const [sortBy, setSortBy] = useState("latest");
@@ -43,8 +48,12 @@ const Blog = () => {
   const [errorRecent, setErrorRecent] = useState(null);
 
   useEffect(() => {
+    console.log('Blog.tsx useEffect running');
+    if (typeof process !== 'undefined' && process.stdout) {
+      process.stdout.write('Blog.tsx useEffect running (server)\n');
+    }
     setLoading(true);
-    fetch('/api/posts')
+    fetch(getApiUrl('/api/posts'))
       .then(res => {
         if (!res.ok) throw new Error('Network response was not ok');
         return res.json();
@@ -54,7 +63,11 @@ const Blog = () => {
         setError(null);
         setLoading(false);
       })
-      .catch(() => {
+      .catch((err) => {
+        console.error('Failed to load posts:', err);
+        if (typeof process !== 'undefined' && process.stdout) {
+          process.stdout.write('Failed to load posts: ' + err + '\n');
+        }
         setError('Failed to load posts');
         setLoading(false);
       });
@@ -62,7 +75,7 @@ const Blog = () => {
 
   useEffect(() => {
     setLoadingPopular(true);
-    fetch('/api/posts?category=popular&limit=4')
+    fetch(getApiUrl('/api/posts?category=popular&limit=4'))
       .then(res => {
         if (!res.ok) throw new Error('Network response was not ok');
         return res.json();
@@ -80,7 +93,7 @@ const Blog = () => {
 
   useEffect(() => {
     setLoadingRecent(true);
-    fetch('/api/posts?category=latest&limit=4')
+    fetch(getApiUrl('/api/posts?category=latest&limit=4'))
       .then(res => {
         if (!res.ok) throw new Error('Network response was not ok');
         return res.json();
@@ -140,7 +153,7 @@ const Blog = () => {
 
   const handleSubmitMusicRedirect = async () => {
     try {
-      const res = await fetch('/api/auth/settings/submit-redirect-url');
+      const res = await fetch(getApiUrl('/api/auth/settings/submit-redirect-url'));
       const data = await res.json();
       const url = data.url || 'https://example.com';
       window.location.href = url;
@@ -152,7 +165,7 @@ const Blog = () => {
   const handleRatePost = async (postId) => {
     setRatingLoading((prev) => ({ ...prev, [postId]: true }));
     try {
-      await fetch(`/api/posts/${postId}/rate`, { method: 'POST' });
+      await fetch(getApiUrl(`/api/posts/${postId}/rate`), { method: 'POST' });
       setPosts((prev) => prev.map(p => p.id === postId ? { ...p, rating: (p.rating || 0) + 1 } : p));
     } finally {
       setRatingLoading((prev) => ({ ...prev, [postId]: false }));
