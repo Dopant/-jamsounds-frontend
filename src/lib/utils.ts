@@ -21,5 +21,7 @@ export async function handleSubmitMusicRedirect() {
 }
 
 export function getApiUrl(path: string) {
-  return path;
+  const cleanPath = path.startsWith('/') ? path.slice(1) : path;
+  return `https://backend.jamjournal.com/${cleanPath}`;
 }
+

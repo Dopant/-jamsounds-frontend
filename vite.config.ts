@@ -9,17 +9,13 @@ export default defineConfig(({ mode }) => ({
     host: "::",
     port: 8080,
     proxy: {
-      '/api': 'http://localhost:4000',
-      '/uploads': 'http://localhost:4000', // Proxy image uploads to backend
+      "/api": "https://backend.jamjournal.com",
+      "/uploads": "https://backend.jamjournal.com", // Image/media uploads
     },
-  },
-  define: {
-    'import.meta.env.VITE_API_BASE_URL': process.env.VITE_API_BASE_URL || '',
   },
   plugins: [
     react(),
-    mode === 'development' &&
-    componentTagger(),
+    mode === "development" && componentTagger(),
   ].filter(Boolean),
   resolve: {
     alias: {
@@ -27,5 +23,3 @@ export default defineConfig(({ mode }) => ({
     },
   },
 }));
-// In production, set VITE_API_BASE_URL in your .env file to your Vercel backend URL (e.g. https://your-backend.vercel.app)
-// Update fetch calls in the frontend to use this base URL.
