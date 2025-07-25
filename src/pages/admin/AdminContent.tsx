@@ -33,6 +33,7 @@ const AdminContent = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [priorityUpdating, setPriorityUpdating] = useState<string | null>(null);
+  const [genres, setGenres] = useState<any[]>([]);
 
   const fetchPosts = async () => {
     setLoading(true);
@@ -49,8 +50,20 @@ const AdminContent = () => {
     }
   };
 
+  const fetchGenres = async () => {
+    try {
+      const res = await fetch('/api/genres');
+      if (!res.ok) throw new Error('Failed to fetch genres');
+      const data = await res.json();
+      setGenres(data);
+    } catch {
+      setGenres([]);
+    }
+  };
+
   useEffect(() => {
     fetchPosts();
+    fetchGenres();
   }, []);
 
   const handleCreatePost = () => {
@@ -70,7 +83,8 @@ const AdminContent = () => {
         excerpt: fullPost.excerpt || '',
         content: fullPost.content || '',
         author: fullPost.author?.name || '',
-        genre: fullPost.genre || '',
+        genre_id: fullPost.genre_id || '',
+        genre_name: fullPost.genre_name || '',
         tags: typeof fullPost.tags === 'string' ? fullPost.tags.split(',').map((t: string) => t.trim()).filter(Boolean) : (fullPost.tags || []),
         featured: !!fullPost.featured,
         heroImageUrl: fullPost.hero_image_url || '',
@@ -86,6 +100,7 @@ const AdminContent = () => {
             }))
           : [],
         categories: Array.isArray(fullPost.categories) ? fullPost.categories : [],
+        created_at: fullPost.created_at || '',
       });
       setShowPostEditor(true);
     } catch (err) {
@@ -185,6 +200,7 @@ const AdminContent = () => {
     return (
       <PostEditor
         initialData={editingPost}
+        genres={genres}
         onSave={handleSavePost}
         onCancel={handleCancelEdit}
       />
@@ -206,7 +222,7 @@ const AdminContent = () => {
           <Tabs value={activeTab} onValueChange={setActiveTab} className="mt-8">
             <TabsList>
               <TabsTrigger value="posts">Blog Posts</TabsTrigger>
-              <TabsTrigger value="analytics">Content Analytics</TabsTrigger>
+              <TabsTrigger value="genres">Genre/Category</TabsTrigger>
             </TabsList>
 
             <TabsContent value="posts" className="space-y-6">
@@ -322,30 +338,105 @@ const AdminContent = () => {
               </div>
             </TabsContent>
 
-            <TabsContent value="analytics" className="space-y-6">
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-                <Card>
-                  <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                    <CardTitle className="text-sm font-medium">Total Posts</CardTitle>
-                    <FileText className="h-4 w-4 text-muted-foreground" />
-                  </CardHeader>
-                  <CardContent>
-                    <div className="text-2xl font-bold">{posts.length}</div>
-                    <p className="text-xs text-muted-foreground">+2 from last month</p>
-                  </CardContent>
-                </Card>
-                <Card>
-                  <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                    <CardTitle className="text-sm font-medium">Published</CardTitle>
-                    <BarChart3 className="h-4 w-4 text-muted-foreground" />
-                  </CardHeader>
-                  <CardContent>
-                    <div className="text-2xl font-bold">{posts.filter(p => p.featured).length}</div>
-                    <p className="text-xs text-muted-foreground">+1 from last month</p>
-                  </CardContent>
-                </Card>
-                {/* Add more analytics cards as needed */}
-              </div>
+            <TabsContent value="genres" className="space-y-6">
+              <Card>
+                <CardHeader>
+                  <CardTitle>Manage Genres/Categories</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <form
+                    onSubmit={async e => {
+                      e.preventDefault();
+                      const form = e.target as HTMLFormElement;
+                      const name = (form.elements.namedItem('newGenre') as HTMLInputElement).value.trim();
+                      if (!name) return;
+                      const res = await fetch('/api/genres', {
+                        method: 'POST',
+                        headers: {
+                          'Content-Type': 'application/json',
+                          'Authorization': `Bearer ${localStorage.getItem('adminToken') || ''}`
+                        },
+                        body: JSON.stringify({ name })
+                      });
+                      if (res.ok) {
+                        fetchGenres();
+                        form.reset();
+                        toast({ title: 'Genre added!' });
+                      } else {
+                        toast({ title: 'Error', description: 'Failed to add genre', variant: 'destructive' });
+                      }
+                    }}
+                    className="flex gap-2 mb-4"
+                  >
+                    <Input name="newGenre" placeholder="Add new genre/category..." />
+                    <Button type="submit">Add</Button>
+                  </form>
+                  <div className="overflow-x-auto">
+                    <table className="min-w-full text-sm">
+                      <thead>
+                        <tr>
+                          <th className="text-left py-2">Name</th>
+                          <th className="text-left py-2">Actions</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {genres.map((genre: any) => (
+                          <tr key={genre.id}>
+                            <td className="py-2">
+                              <input
+                                className="bg-transparent border-b border-muted focus:outline-none focus:border-primary"
+                                defaultValue={genre.name}
+                                onBlur={async e => {
+                                  const newName = e.target.value.trim();
+                                  if (newName && newName !== genre.name) {
+                                    const res = await fetch(`/api/genres/${genre.id}`, {
+                                      method: 'PUT',
+                                      headers: {
+                                        'Content-Type': 'application/json',
+                                        'Authorization': `Bearer ${localStorage.getItem('adminToken') || ''}`
+                                      },
+                                      body: JSON.stringify({ name: newName })
+                                    });
+                                    if (res.ok) {
+                                      fetchGenres();
+                                      toast({ title: 'Genre updated!' });
+                                    } else {
+                                      toast({ title: 'Error', description: 'Failed to update genre', variant: 'destructive' });
+                                    }
+                                  }
+                                }}
+                              />
+                            </td>
+                            <td className="py-2">
+                              <Button
+                                variant="destructive"
+                                size="sm"
+                                onClick={async () => {
+                                  if (!window.confirm('Delete this genre?')) return;
+                                  const res = await fetch(`/api/genres/${genre.id}`, {
+                                    method: 'DELETE',
+                                    headers: {
+                                      'Authorization': `Bearer ${localStorage.getItem('adminToken') || ''}`
+                                    }
+                                  });
+                                  if (res.ok) {
+                                    fetchGenres();
+                                    toast({ title: 'Genre deleted!' });
+                                  } else {
+                                    toast({ title: 'Error', description: 'Failed to delete genre', variant: 'destructive' });
+                                  }
+                                }}
+                              >
+                                Delete
+                              </Button>
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                </CardContent>
+              </Card>
             </TabsContent>
           </Tabs>
         </div>

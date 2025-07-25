@@ -37,31 +37,38 @@ interface PostData {
   excerpt: string;
   content: string;
   author: string;
-  genre: string;
+  genre_id?: number | string;
+  genre_name?: string;
   tags: string[];
   featured: boolean;
   heroImage?: File;
   heroImageUrl?: string;
   mediaItems: MediaItem[];
+  created_at?: string;
+  categories: string[];
 }
 
 interface PostEditorProps {
   initialData?: Partial<PostData>;
+  genres: Array<{ id: number; name: string }>;
   onSave: (data: FormData, isEdit: boolean) => void;
   onCancel: () => void;
 }
 
-export function PostEditor({ initialData, onSave, onCancel }: PostEditorProps) {
+export function PostEditor({ initialData, genres, onSave, onCancel }: PostEditorProps) {
   const [postData, setPostData] = useState<PostData>({
     title: initialData?.title || "",
     excerpt: initialData?.excerpt || "",
     content: initialData?.content || "",
     author: initialData?.author || "",
-    genre: initialData?.genre || "Electronic",
+    genre_id: initialData?.genre_id || (genres[0]?.id ?? ''),
+    genre_name: initialData?.genre_name || '',
     tags: initialData?.tags || [],
     featured: initialData?.featured || false,
     heroImageUrl: initialData?.heroImageUrl || "",
     mediaItems: initialData?.mediaItems || [],
+    created_at: initialData?.created_at || '',
+    categories: initialData?.categories || [],
   });
 
   const [newTag, setNewTag] = useState("");
@@ -71,8 +78,6 @@ export function PostEditor({ initialData, onSave, onCancel }: PostEditorProps) {
   // Add categories state
   const categoryOptions = ["featured", "latest", "popular"];
   const [categories, setCategories] = useState<string[]>(initialData?.categories || []);
-
-  const genres = ["Electronic", "Hip-Hop", "Indie Rock", "Folk", "Pop", "Rock", "Jazz", "R&B", "Alternative"];
 
   const handleAddTag = () => {
     if (newTag.trim() && !postData.tags.includes(newTag.trim())) {
@@ -165,11 +170,15 @@ export function PostEditor({ initialData, onSave, onCancel }: PostEditorProps) {
     formData.append("title", postData.title);
     formData.append("excerpt", postData.excerpt);
     formData.append("content", postData.content);
-    formData.append("genre", postData.genre);
+    formData.append("genre_id", String(postData.genre_id));
     formData.append("tags", postData.tags.join(","));
     formData.append("featured", String(postData.featured));
     if (postData.heroImage) {
       formData.append("heroImage", postData.heroImage);
+    }
+    // Add created_at if present
+    if (postData.created_at) {
+      formData.append("created_at", postData.created_at);
     }
     // Add categories
     categories.forEach(cat => formData.append("categories", cat));
@@ -244,6 +253,16 @@ export function PostEditor({ initialData, onSave, onCancel }: PostEditorProps) {
                   rows={3}
                 />
               </div>
+              {/* Created At */}
+              <div>
+                <Label htmlFor="created_at">Created At</Label>
+                <Input
+                  id="created_at"
+                  type="datetime-local"
+                  value={postData.created_at ? postData.created_at.slice(0, 16) : ''}
+                  onChange={e => setPostData(prev => ({ ...prev, created_at: e.target.value }))}
+                />
+              </div>
 
               <div className="grid grid-cols-2 gap-4">
                 <div>
@@ -256,17 +275,17 @@ export function PostEditor({ initialData, onSave, onCancel }: PostEditorProps) {
                   />
                 </div>
                 <div>
-                  <Label htmlFor="genre">Genre</Label>
-                  <Select 
-                    value={postData.genre} 
-                    onValueChange={(value) => setPostData(prev => ({ ...prev, genre: value }))}
+                  <Label htmlFor="genre_id">Genre</Label>
+                  <Select
+                    value={String(postData.genre_id)}
+                    onValueChange={(value) => setPostData(prev => ({ ...prev, genre_id: value }))}
                   >
                     <SelectTrigger>
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
                       {genres.map(genre => (
-                        <SelectItem key={genre} value={genre}>{genre}</SelectItem>
+                        <SelectItem key={genre.id} value={String(genre.id)}>{genre.name}</SelectItem>
                       ))}
                     </SelectContent>
                   </Select>
@@ -548,7 +567,7 @@ export function PostEditor({ initialData, onSave, onCancel }: PostEditorProps) {
               <p className="text-muted-foreground">{postData.excerpt}</p>
               <div className="flex items-center space-x-4 text-sm text-muted-foreground">
                 <span>By {postData.author}</span>
-                <Badge>{postData.genre}</Badge>
+                <Badge>{postData.genre_name}</Badge>
                 {postData.featured && <Badge variant="secondary">Featured</Badge>}
               </div>
               {postData.heroImageUrl && (

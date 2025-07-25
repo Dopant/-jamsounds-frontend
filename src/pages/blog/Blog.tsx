@@ -24,8 +24,6 @@ import { getApiUrl } from "@/lib/utils";
 import { handleSubmitMusicRedirect } from '@/lib/utils';
 import { FaXTwitter, FaFacebook, FaInstagram, FaYoutube } from 'react-icons/fa6';
 
-const genres = ["All Genres", "Electronic", "Hip-Hop", "Indie Rock", "Folk", "Pop", "Rock", "Jazz", "R&B", "Alternative", "Editorial"];
-
 const Blog = () => {
   console.log('Blog.tsx loaded');
   if (typeof process !== 'undefined' && process.stdout) {
@@ -49,6 +47,10 @@ const Blog = () => {
   const [errorPopular, setErrorPopular] = useState(null);
   const [errorRecent, setErrorRecent] = useState(null);
   const [socialLinks, setSocialLinks] = useState<any>({});
+  const [genres, setGenres] = useState<string[]>([]);
+  const [email, setEmail] = useState("");
+  const [newsletterStatus, setNewsletterStatus] = useState("");
+  const [newsletterLoading, setNewsletterLoading] = useState(false);
 
   useEffect(() => {
     console.log('Blog.tsx useEffect running');
@@ -125,6 +127,16 @@ const Blog = () => {
   }, []);
 
   useEffect(() => {
+    // Fetch genres dynamically
+    fetch('/api/genres')
+      .then(res => res.json())
+      .then(data => {
+        setGenres(['All Genres', ...data.map((g: any) => g.name)]);
+      })
+      .catch(() => setGenres(['All Genres']));
+  }, []);
+
+  useEffect(() => {
     // Inject Tawk.to chat bot script
     const script = document.createElement('script');
     script.async = true;
@@ -141,7 +153,7 @@ const Blog = () => {
   let filteredPosts = posts
     .filter(post => {
       // Filter by genre
-      if (selectedGenre !== 'All Genres' && post.genre !== selectedGenre) return false;
+      if (selectedGenre !== 'All Genres' && post.genre_name !== selectedGenre) return false;
       // Filter by search term (title, excerpt, author)
       if (searchTerm.trim() !== '') {
         const term = searchTerm.toLowerCase();
@@ -513,35 +525,44 @@ const Blog = () => {
                 <p className="text-secondary-foreground/80 text-sm mb-4">
                   Stay updated with the latest music reviews and industry trends
                 </p>
-                <div className="space-y-2">
+                <form
+                  onSubmit={async (e) => {
+                    e.preventDefault();
+                    setNewsletterStatus("");
+                    setNewsletterLoading(true);
+                    try {
+                      const res = await fetch('/api/newsletter/subscribe', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ email })
+                      });
+                      const data = await res.json();
+                      if (!res.ok) throw new Error(data.message || 'Failed to subscribe');
+                      setNewsletterStatus('Subscribed! Check your inbox.');
+                      setEmail('');
+                    } catch (err) {
+                      setNewsletterStatus(err instanceof Error ? err.message : 'Failed to subscribe');
+                    } finally {
+                      setNewsletterLoading(false);
+                    }
+                  }}
+                  className="space-y-3"
+                >
                   <Input
                     placeholder="Enter your email"
-                    className="bg-white/10 border-white/20 text-white placeholder:text-white/60"
-                    id="newsletter-email"
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                    className="bg-white/20 border-white/30 placeholder:text-secondary-foreground/60 text-secondary-foreground"
+                    type="email"
+                    required
                   />
-                  <Button 
-                    className="w-full bg-white text-secondary hover:bg-white/90"
-                    onClick={() => {
-                      const email = (document.getElementById('newsletter-email') as HTMLInputElement)?.value;
-                      if (email && /\S+@\S+\.\S+/.test(email)) {
-                        const subscribers = JSON.parse(localStorage.getItem('newsletterSubscribers') || '[]');
-                        if (!subscribers.includes(email)) {
-                          subscribers.push(email);
-                          localStorage.setItem('newsletterSubscribers', JSON.stringify(subscribers));
-                          localStorage.setItem('subscriberCount', subscribers.length.toString());
-                          (document.getElementById('newsletter-email') as HTMLInputElement).value = '';
-                          alert('Successfully subscribed to newsletter!');
-                        } else {
-                          alert('Email already subscribed!');
-                        }
-                      } else {
-                        alert('Please enter a valid email address');
-                      }
-                    }}
-                  >
-                    Subscribe
+                  <Button className="w-full bg-white text-secondary hover:bg-white/90" type="submit" disabled={newsletterLoading}>
+                    {newsletterLoading ? 'Subscribing...' : 'Subscribe'}
                   </Button>
-                </div>
+                  {newsletterStatus && (
+                    <div className={`text-sm mt-2 ${newsletterStatus.startsWith('Subscribed') ? 'text-green-200' : 'text-red-200'}`}>{newsletterStatus}</div>
+                  )}
+                </form>
               </Card>
 
               {/* Call to Action */}
@@ -581,7 +602,7 @@ const Blog = () => {
             <div>
               <h3 className="font-semibold mb-4">Categories</h3>
               <ul className="space-y-3 text-muted-foreground text-sm">
-                {genres.slice(1).map((genre) => (
+                {genres.filter(g => g !== 'All Genres').map((genre) => (
                   <li key={genre}>
                     <Link to={`/blog?genre=${genre}`} className="hover:text-primary transition-colors">{genre}</Link>
                   </li>
@@ -613,7 +634,7 @@ const Blog = () => {
                 )}
               </div>
               <p className="text-sm text-muted-foreground">
-                &copy; {new Date().getFullYear()} Music Blog. All rights reserved.
+                &copy; 2023 Music Blog. All rights reserved.
               </p>
             </div>
           </div>

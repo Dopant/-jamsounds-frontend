@@ -22,10 +22,6 @@ import { getApiUrl, handleSubmitMusicRedirect } from "@/lib/utils";
 import Unsubscribe from './Unsubscribe';
 import { FaXTwitter, FaFacebook, FaInstagram, FaYoutube } from 'react-icons/fa6';
 
-const genres = [
-  "All Genres", "Electronic", "Hip-Hop", "Indie Rock", "Folk", "Pop", "Rock", "Jazz", "R&B", "Alternative"
-];
-
 const Index = () => {
   const [selectedGenre, setSelectedGenre] = useState("All Genres");
   const [email, setEmail] = useState("");
@@ -56,6 +52,7 @@ const Index = () => {
   const [newsletterStatus, setNewsletterStatus] = useState('');
   const [newsletterLoading, setNewsletterLoading] = useState(false);
   const [socialLinks, setSocialLinks] = useState<any>({});
+  const [genres, setGenres] = useState<string[]>([]);
 
   useEffect(() => {
     console.log('Index.tsx loaded');
@@ -173,6 +170,16 @@ const Index = () => {
   }, []);
 
   useEffect(() => {
+    // Fetch genres dynamically
+    fetch('/api/genres')
+      .then(res => res.json())
+      .then(data => {
+        setGenres(['All Genres', ...data.map((g: any) => g.name)]);
+      })
+      .catch(() => setGenres(['All Genres']));
+  }, []);
+
+  useEffect(() => {
     // Inject Tawk.to chat bot script
     const script = document.createElement('script');
     script.async = true;
@@ -195,7 +202,7 @@ const Index = () => {
   // Genre filter for latest posts
   const filteredLatestPosts = selectedGenre === "All Genres"
     ? latestPosts
-    : latestPosts.filter(post => post.genre === selectedGenre);
+    : latestPosts.filter(post => post.genre_name === selectedGenre);
 
   return (
     <div className="min-h-screen bg-background">
@@ -393,7 +400,7 @@ const Index = () => {
                           />
                           <div className="absolute top-4 right-4">
                             <Badge className="genre-tag">
-                              {post.genre}
+                              {post.genre_name}
                             </Badge>
                           </div>
                         </div>
@@ -646,7 +653,7 @@ const Index = () => {
                 </a>
               )}
             </div>
-            <p>&copy; 2024 JAM JOURNAL SOUND. All rights reserved.</p>
+            <p>&copy; 2023 JAM JOURNAL SOUND. All rights reserved.</p>
           </div>
         </div>
       </footer>

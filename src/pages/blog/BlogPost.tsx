@@ -31,6 +31,19 @@ import {
 } from "lucide-react";
 import { FaXTwitter, FaFacebook, FaInstagram, FaYoutube } from 'react-icons/fa6';
 
+// Utility to convert plain text to HTML with paragraphs and line breaks
+function plainTextToHtml(text: string) {
+  // If it looks like HTML, return as is
+  if (/<[a-z][\s\S]*>/i.test(text)) return text;
+  // Split by double newlines for paragraphs, single newline for <br>
+  return text
+    .split(/\n{2,}/)
+    .map(paragraph =>
+      `<p>${paragraph.replace(/\n/g, '<br />')}</p>`
+    )
+    .join('');
+}
+
 const BlogPost = () => {
   const { id } = useParams();
   console.log('BlogPost: id param', id);
@@ -294,7 +307,7 @@ const BlogPost = () => {
               {/* Article Content */}
               <div 
                 className="prose prose-lg max-w-none dark:prose-invert animate-fade-in"
-                dangerouslySetInnerHTML={{ __html: post.content }}
+                dangerouslySetInnerHTML={{ __html: plainTextToHtml(post.content) }}
               />
 
               {/* Tags */}
